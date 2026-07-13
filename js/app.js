@@ -5,6 +5,7 @@
     const warningScreen = document.querySelector('#warning-screen');
     const startScreen = document.querySelector('#start-screen');
     const gameScreen = document.querySelector('#game-screen');
+    const warningContinue = document.querySelector('#warning-continue');
     const startButton = document.querySelector('#start-button');
     const form = document.querySelector('#question-form');
     const question = document.querySelector('#free-question');
@@ -23,7 +24,6 @@
     const subtitle = document.querySelector('#subtitle');
     const developerToggle = document.querySelector('#developer-toggle');
     const developerPanel = document.querySelector('#developer-panel');
-    const warningContinue = document.querySelector('#warning-continue');
     const reduceEffects = document.querySelector('#reduce-effects');
     const huntRestart = document.querySelector('#hunt-restart');
     const ui = Game.createUI(root);
