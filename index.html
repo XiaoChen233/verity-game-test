@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080907">
+  <title>VERITY：最后一个问题</title>
+  <link rel="stylesheet" href="styles.css?v=hunt-clean-1">
+</head>
+<body>
+  <main id="app" class="app-shell">
+    <section id="warning-screen" class="warning-screen" aria-labelledby="warning-title">
+      <div class="warning-symbol" aria-hidden="true"><span>!</span></div>
+      <p class="archive-label">CONTENT WARNING / 请在游戏前阅读</p>
+      <h1 id="warning-title">警告！</h1>
+      <p class="warning-lead">游戏体验中可能包含闪光、画面抖动、突发声音和跳吓。</p>
+      <p class="warning-copy">少数玩家可能对闪烁光影或快速变化的画面产生不适。如果出现眩晕、眼部不适、肌肉抽搐或方向感异常，请立即停止游戏，并在再次体验前咨询专业医务人员。</p>
+      <label class="reduce-effects-option">
+        <input id="reduce-effects" type="checkbox">
+        <span>启用减少闪光与跳动效果</span>
+      </label>
+      <button id="warning-continue" class="warning-continue" type="button">我已阅读，继续</button>
+    </section>
+
+    <section id="start-screen" class="start-screen" aria-labelledby="game-title" hidden>
+      <p class="archive-label">ARCHIVE / PAGE ? OF ?</p>
+      <h1 id="game-title">VERITY</h1>
+      <p class="start-prompt">它说自己知道一切。</p>
+      <button id="start-button" class="start-button" type="button">开始询问</button>
+    </section>
+
+    <section id="game-screen" class="game-screen" aria-label="Verity 对话空间" hidden>
+      <div id="event-overlay" class="event-overlay" aria-hidden="true" hidden>
+        <img id="event-portrait" src="assets/verity-normal.png?v=transparent-2" alt="">
+        <div id="monster-spotlight" class="monster-spotlight" aria-hidden="true"></div>
+        <strong id="monster-warning-text" class="monster-warning-text" aria-hidden="true">HE IS COMING</strong>
+        <div id="only-me-field" class="only-me-field"></div>
+        <div class="breakdown-slices" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <section id="breakdown-screen" class="breakdown-screen" aria-label="Verity 完全崩坏章节" hidden>
+        <div class="breakdown-noise" aria-hidden="true"></div>
+        <time id="breakdown-timer" class="breakdown-timer" aria-live="polite">01:30</time>
+        <img id="breakdown-portrait" class="breakdown-portrait" src="assets/verity-angry.png?v=transparent-2" alt="愤怒的 Verity 正在注视你">
+        <p id="breakdown-prompt" class="breakdown-prompt"></p>
+        <p id="breakdown-response" class="breakdown-response" aria-live="polite"></p>
+        <div id="breakdown-choices" class="breakdown-choices" aria-label="崩坏章节选项"></div>
+        <img id="hunt-monster" class="hunt-monster" src="assets/verity-monster-hunt-clean-v2.png" alt="Verity 的怪物形态正在扑向玩家">
+        <div id="hunt-result" class="hunt-result" hidden>
+          <h2>I FIND U</h2>
+          <button id="hunt-restart" type="button">重新打开盒子</button>
+        </div>
+      </section>
+      <header class="game-header">
+        <div>
+          <p class="archive-label">PRIVATE HELPER FRIEND</p>
+          <h2>Verity</h2>
+        </div>
+        <div class="audio-controls" aria-label="语音控制">
+          <button id="replay-button" class="icon-button" type="button" title="重播开场语音" aria-label="重播开场语音">↻</button>
+          <button id="mute-button" class="icon-button" type="button" title="静音" aria-label="静音">♪</button>
+        </div>
+      </header>
+
+      <div class="game-layout">
+        <section class="portrait-stage" aria-label="Verity 状态">
+          <div id="signal" class="signal" aria-hidden="true"></div>
+          <img id="portrait" class="portrait" src="assets/verity-normal.png?v=transparent-2" alt="Verity 正在等待你的问题">
+          <p id="speaker" class="speaker">VERITY / WAITING</p>
+          <p id="subtitle" class="subtitle" aria-live="polite"></p>
+          <dl class="status-strip" aria-label="当前状态">
+            <div><dt>信任</dt><dd id="status-trust">50</dd></div>
+            <div><dt>异常</dt><dd id="status-anomaly">0</dd></div>
+            <div><dt>线索</dt><dd id="status-clues">0/12</dd></div>
+          </dl>
+        </section>
+
+        <section class="console" aria-label="对话记录和问题">
+          <div id="dialogue-history" class="dialogue-history" aria-live="polite" aria-relevant="additions text"></div>
+          <p id="psychological-hint" class="psychological-hint" aria-live="polite"></p>
+          <div id="choices" class="choices" aria-label="问题选项"></div>
+          <form id="question-form" class="question-form">
+            <label for="free-question">或者，输入你自己的问题</label>
+            <div class="input-row">
+              <input id="free-question" name="question" type="text" maxlength="100" autocomplete="off" placeholder="例如：Twixxel 去了哪里？">
+              <button id="ask-button" type="submit">询问</button>
+            </div>
+            <p id="input-message" class="input-message" aria-live="polite"></p>
+          </form>
+          <div id="ending-panel" class="ending-panel" hidden></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <button id="developer-toggle" class="developer-toggle" type="button" aria-expanded="false" aria-controls="developer-panel" hidden>DEV</button>
+  <aside id="developer-panel" class="developer-panel" hidden></aside>
+
+  <audio id="opening-audio" preload="metadata" src="assets/verity-opening.mpeg"></audio>
+  <audio id="victory-audio" preload="metadata" src="assets/verity-victory.mpeg"></audio>
+  <audio id="prophecy-audio" preload="metadata" src="assets/verity-prophecy.wav"></audio>
+  <audio id="monster-shout-audio" preload="metadata" src="assets/verity-monster-shout.wav"></audio>
+  <script src="js/story-data.js?v=story-15"></script>
+  <script src="js/editable-content.js?v=story-20"></script>
+  <script src="js/state.js"></script>
+  <script src="js/intents.js"></script>
+  <script src="js/engine.js?v=story-20"></script>
+  <script src="js/breakdown.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/ui.js?v=breakdown-preview-1"></script>
+  <script src="js/app.js?v=breakdown-preview-1"></script>
+</body>
+</html>
