@@ -7,12 +7,12 @@
   <link rel="stylesheet" href="editor.css">
 </head>
 <body>
-  <header class="editor-header"><div><p>VERITY / AUTHORING</p><h1>开发者编辑器</h1></div><div class="header-actions"><button id="save">保存配置</button><button id="export">导出 JSON</button><label class="file-button">导入 JSON<input id="import" type="file" accept="application/json"></label><button id="reset">恢复默认</button><a href="index.html">打开游戏</a></div></header>
+  <header class="editor-header"><div><p>VERITY / AUTHORING</p><h1>开发者编辑器</h1></div><div class="header-actions"><button id="save" type="button">保存本地预览</button><button id="export-script" type="button">导出线上剧情文件</button><button id="export" type="button">导出 JSON</button><label class="file-button">导入 JSON<input id="import" type="file" accept="application/json,.json"></label><button id="reset" type="button">恢复线上配置</button><a href="index.html">打开游戏</a></div></header>
   <main class="editor-layout">
     <nav class="editor-nav" aria-label="编辑分类"><button class="nav-item is-active" data-section="overview">总览</button><button class="nav-item" data-section="endings">结局预览</button><button class="nav-item" data-section="text">文字与暗示</button><button class="nav-item" data-section="chapters">章节管理</button><button class="nav-item" data-section="questions">问题与剧情</button><button class="nav-item" data-section="audio">音频与图片</button><button class="nav-item" data-section="animation">动画配置</button></nav>
     <section id="form-area" class="form-area"></section>
     <aside class="preview"><p class="eyebrow">LIVE PREVIEW</p><div id="preview-card" class="preview-card"><span id="preview-label">NORMAL / WAITING</span><strong id="preview-title">VERITY</strong><p id="preview-copy">它说自己知道一切。</p><button id="preview-action">模拟心理暗示</button><small id="preview-hint"></small></div><p id="save-status" class="save-status">配置从浏览器本地读取</p></aside>
   </main>
-  <script src="js/story-data.js?v=story-16"></script><script src="js/editable-content.js?v=story-20"></script><script src="js/ui.js?v=breakdown-preview-1"></script><script src="editor.js?v=perfect-ending-2"></script>
+  <script src="js/story-data.js?v=story-config-1"></script><script src="js/story-config.js?v=story-config-1"></script><script src="js/story-config-tools.js?v=story-config-1"></script><script src="js/editable-content.js?v=story-config-1"></script><script src="js/ui.js?v=breakdown-preview-1"></script><script src="editor.js?v=story-config-1"></script>
 </body>
 </html>

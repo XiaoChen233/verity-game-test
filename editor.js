@@ -4,25 +4,63 @@
   const area = document.querySelector('#form-area');
   const status = document.querySelector('#save-status');
   const previewHint = document.querySelector('#preview-hint');
-  const config = {
-    timing: Object.assign({}, Game.EDITABLE_CONTENT.timing),
-    psychology: { whispers: Game.EDITABLE_CONTENT.psychology.whispers.slice() },
-    randomReplies: Game.EDITABLE_CONTENT.randomReplies.slice(),
-    breakdown: { duration: Game.EDITABLE_CONTENT.breakdown.duration, wrongPenalties: Game.EDITABLE_CONTENT.breakdown.wrongPenalties.slice() },
-    assets: Object.assign({}, Game.EDITABLE_CONTENT.assets || {}),
-    chapters: clone(Game.EDITABLE_CONTENT.chapters || []),
-    customQuestions: []
-  };
-  Object.keys(Game.STORY).forEach(function (chapter) {
-    Game.STORY[chapter].choices.forEach(function (question) {
-      config.customQuestions.push({ id: question.id, chapter: Number(chapter), label: question.label, response: question.response, effects: question.effects || {}, nextScene: question.nextScene, advanceChapter: question.advanceChapter });
-    });
-  });
+  let config = Game.createEditorStoryConfig(Game.EDITABLE_CONTENT, Game.STORY);
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function hydrateEditorConfig(nextConfig) {
+    config = clone(nextConfig);
+    config.customQuestions = [];
+    config.chapters.forEach(function (chapter) {
+      (chapter.choices || []).forEach(function (question) {
+        const editableQuestion = clone(question);
+        editableQuestion.chapter = Number(chapter.number);
+        config.customQuestions.push(editableQuestion);
+      });
+    });
+  }
+  hydrateEditorConfig(config);
+  function prepareConfig() {
+    const draft = clone(config);
+    const questions = draft.customQuestions || [];
+    delete draft.customQuestions;
+    const chapters = {};
+    draft.chapters.forEach(function (chapter) {
+      chapter.choices = [];
+      chapters[Number(chapter.number)] = chapter;
+    });
+    const errors = [];
+    questions.forEach(function (question) {
+      const chapter = chapters[Number(question.chapter)];
+      if (!chapter) {
+        errors.push(`问题 ${question.id || '(空)'} 指向不存在的章节 ${question.chapter}。`);
+        return;
+      }
+      const savedQuestion = clone(question);
+      delete savedQuestion.chapter;
+      chapter.choices.push(savedQuestion);
+    });
+    if (errors.length) return { config: null, errors: errors };
+    const normalized = Game.normalizeStoryConfig(draft);
+    const validation = Game.validateStoryConfig(normalized);
+    return validation.valid ? { config: normalized, errors: [] } : { config: null, errors: validation.errors };
+  }
+  function reportErrors(errors) {
+    status.textContent = `配置未保存：${errors.join(' ')}`;
+  }
   function save() {
-    localStorage.setItem(STORAGE, JSON.stringify(config));
-    status.textContent = `已保存 ${new Date().toLocaleTimeString()}。游戏页面重新打开后读取新配置。`;
+    const prepared = prepareConfig();
+    if (!prepared.config) { reportErrors(prepared.errors); return false; }
+    localStorage.setItem(STORAGE, JSON.stringify(prepared.config));
+    status.textContent = `本地预览已保存 ${new Date().toLocaleTimeString()}。重新打开游戏后读取新配置。`;
+    return true;
+  }
+  function downloadText(filename, text, type) {
+    const blob = new Blob([text], { type: type });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
   }
   function field(label, value, onInput, type) {
     const wrap = document.createElement('div'); wrap.className = 'field';
@@ -37,9 +75,9 @@
     const input = document.createElement('input'); input.type = 'file'; input.accept = accept; input.addEventListener('change', function () { const file = input.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function () { config.assets[key] = reader.result; status.textContent = `${label} 已载入，点击保存配置写入浏览器。`; }; reader.readAsDataURL(file); }); wrap.appendChild(input); return wrap;
   }
   function renderOverview() {
-    area.innerHTML = '<h2>总览</h2><p class="section-copy">所有修改保存在当前浏览器。保存后重新打开游戏页面即可读取配置，也可以随时导出 JSON 给其他开发者。</p>';
+    area.innerHTML = '<h2>总览</h2><p class="section-copy">保存本地预览只影响当前浏览器。导出线上剧情文件并部署后，所有玩家才会读取新剧情。</p>';
     const c = card('当前配置'); c.appendChild(field('配置名称', 'Verity 心理恐怖版本', function () {}));
-    const info = document.createElement('p'); info.className = 'section-copy'; info.textContent = `${config.chapters.length + 4} 个章节 / ${config.customQuestions.length} 个问题 / ${config.psychology.whispers.length} 条心理暗示 / ${Object.keys(config.assets).length} 个资源覆盖`; c.appendChild(info); area.appendChild(c);
+    const info = document.createElement('p'); info.className = 'section-copy'; info.textContent = `${config.chapters.length} 个章节 / ${config.customQuestions.length} 个问题 / ${config.psychology.whispers.length} 条心理暗示 / ${Object.keys(config.assets).length} 个资源覆盖`; c.appendChild(info); area.appendChild(c);
     const actions = document.createElement('div'); actions.className = 'card-actions'; const open = document.createElement('a'); open.href = 'index.html'; open.textContent = '打开游戏预览'; actions.appendChild(open); area.appendChild(actions);
   }
   function renderText() {
@@ -70,8 +108,8 @@
   }
   function renderChapters() {
     area.innerHTML = '<h2>章节管理</h2><p class="section-copy">新增章节会在游戏状态机中注册。章节编号应连续且不要与现有章节重复。</p>';
-    const toolbar = document.createElement('div'); toolbar.className = 'question-toolbar'; const add = document.createElement('button'); add.textContent = '新增章节'; add.onclick = function () { const number = Math.max(4, ...config.chapters.map(c => Number(c.number) || 0)) + 1; config.chapters.push({ number: number, id: `chapter-${number}`, title: `第${number}章 / 新章节`, intro: '新的章节开场白。', choices: [{ id: `chapter-${number}-q1`, label: '新的问题', response: '新的回答', effects: {}, nextScene: 'custom' }] }); renderChapters(); }; toolbar.appendChild(add); area.appendChild(toolbar);
-    config.chapters.forEach(function (chapter, index) { const c = card(`第 ${chapter.number} 章`); c.appendChild(field('章节标题', chapter.title, v => chapter.title = v)); c.appendChild(field('章节开场白', chapter.intro, v => chapter.intro = v, 'textarea')); const row = document.createElement('div'); row.className = 'field-row'; row.appendChild(field('章节 ID', chapter.id, v => chapter.id = v)); row.appendChild(field('下一章编号', chapter.nextChapter || Number(chapter.number) + 1, v => chapter.nextChapter = Math.max(1, Number(v) || 1), 'number')); c.appendChild(row); const q = document.createElement('p'); q.className = 'section-copy'; q.textContent = `${(chapter.choices || []).length} 个问题`; c.appendChild(q); const actions = document.createElement('div'); actions.className = 'card-actions'; const copy = document.createElement('button'); copy.textContent = '复制章节'; copy.onclick = function () { const duplicate = clone(chapter); duplicate.number = Math.max(15, ...config.chapters.map(item => Number(item.number) || 0)) + 1; duplicate.id = `${chapter.id}-copy-${duplicate.number}`; duplicate.title = `${chapter.title}（副本）`; config.chapters.push(duplicate); renderChapters(); }; actions.appendChild(copy); const remove = document.createElement('button'); remove.className = 'danger'; remove.textContent = '删除章节'; remove.onclick = function () { config.chapters.splice(index, 1); renderChapters(); }; actions.appendChild(remove); c.appendChild(actions); area.appendChild(c); });
+    const toolbar = document.createElement('div'); toolbar.className = 'question-toolbar'; const add = document.createElement('button'); add.textContent = '新增章节'; add.onclick = function () { const number = Math.max(4, ...config.chapters.map(c => Number(c.number) || 0)) + 1; const id = `chapter-${number}`; config.chapters.push({ number: number, id: id, title: `第${number}章 / 新章节`, intro: '新的章节开场白。', choices: [] }); config.customQuestions.push({ id: `${id}-q1`, chapter: number, label: '新的问题', response: '新的回答', effects: {}, nextScene: id }); renderChapters(); }; toolbar.appendChild(add); area.appendChild(toolbar);
+    config.chapters.forEach(function (chapter, index) { const c = card(`第 ${chapter.number} 章`); c.appendChild(field('章节标题', chapter.title, v => chapter.title = v)); c.appendChild(field('章节开场白', chapter.intro, v => chapter.intro = v, 'textarea')); const row = document.createElement('div'); row.className = 'field-row'; row.appendChild(field('章节 ID', chapter.id, v => chapter.id = v)); row.appendChild(field('下一章编号', chapter.nextChapter || Number(chapter.number) + 1, v => chapter.nextChapter = Math.max(1, Number(v) || 1), 'number')); c.appendChild(row); const q = document.createElement('p'); q.className = 'section-copy'; q.textContent = `${config.customQuestions.filter(function (question) { return Number(question.chapter) === Number(chapter.number); }).length} 个问题`; c.appendChild(q); const actions = document.createElement('div'); actions.className = 'card-actions'; const copy = document.createElement('button'); copy.textContent = '复制章节'; copy.onclick = function () { const duplicate = clone(chapter); duplicate.number = Math.max(15, ...config.chapters.map(item => Number(item.number) || 0)) + 1; duplicate.id = `${chapter.id}-copy-${duplicate.number}`; duplicate.title = `${chapter.title}（副本）`; duplicate.choices = []; config.chapters.push(duplicate); config.customQuestions.filter(function (question) { return Number(question.chapter) === Number(chapter.number); }).forEach(function (question, questionIndex) { const copied = clone(question); copied.chapter = duplicate.number; copied.id = `${duplicate.id}-q${questionIndex + 1}`; config.customQuestions.push(copied); }); renderChapters(); }; actions.appendChild(copy); const remove = document.createElement('button'); remove.className = 'danger'; remove.textContent = '删除章节'; remove.onclick = function () { const number = Number(chapter.number); config.chapters.splice(index, 1); config.customQuestions = config.customQuestions.filter(function (question) { return Number(question.chapter) !== number; }); renderChapters(); }; actions.appendChild(remove); c.appendChild(actions); area.appendChild(c); });
   }
   function renderAudio() {
     area.innerHTML = '<h2>音频与图片</h2><p class="section-copy">可以填写本地相对路径或网络地址。文件选择会转为浏览器本地配置，适合快速原型预览。</p>';
@@ -89,8 +127,9 @@
   function preview() { previewHint.textContent = config.psychology.whispers[0] || ''; }
   document.querySelectorAll('.nav-item').forEach(function (button) { button.addEventListener('click', function () { document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('is-active')); button.classList.add('is-active'); render(button.dataset.section); }); });
   document.querySelector('#save').onclick = save;
-  document.querySelector('#export').onclick = function () { const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'verity-editor-config.json'; a.click(); URL.revokeObjectURL(a.href); status.textContent = '配置已导出。'; };
-  document.querySelector('#import').onchange = function (event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function () { try { Object.assign(config, JSON.parse(reader.result)); save(); render('overview'); } catch (error) { status.textContent = '导入失败：JSON 格式不正确。'; } }; reader.readAsText(file); };
+  document.querySelector('#export-script').onclick = function () { const prepared = prepareConfig(); if (!prepared.config) { reportErrors(prepared.errors); return; } downloadText('story-config.js', Game.serializeStoryConfigScript(prepared.config), 'application/javascript'); status.textContent = '线上剧情文件已导出。替换仓库中的 js/story-config.js 后重新部署。'; };
+  document.querySelector('#export').onclick = function () { const prepared = prepareConfig(); if (!prepared.config) { reportErrors(prepared.errors); return; } downloadText('verity-story-config.json', Game.serializeStoryConfigJson(prepared.config), 'application/json'); status.textContent = 'JSON 备份已导出。'; };
+  document.querySelector('#import').onchange = function (event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function () { const parsed = Game.parseStoryConfigJson(reader.result); if (!parsed.config) { reportErrors(parsed.errors); return; } hydrateEditorConfig(parsed.config); save(); render('overview'); preview(); }; reader.readAsText(file); };
   document.querySelector('#reset').onclick = function () { localStorage.removeItem(STORAGE); location.reload(); };
   render('overview'); preview();
 }());

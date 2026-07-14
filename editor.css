@@ -8,6 +8,7 @@ button:hover,a:hover,.file-button:hover{border-color:var(--accent);color:var(--a
 .editor-header p,.eyebrow{margin:0;color:var(--muted);font:11px Consolas,monospace;letter-spacing:2px}
 .editor-header h1{margin:6px 0 0;font:600 27px Georgia,serif}
 .header-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.header-actions button,.header-actions a,.file-button{min-height:40px;display:inline-flex;align-items:center;justify-content:center}
 .file-button input{display:none}
 .editor-layout{display:grid;grid-template-columns:190px minmax(420px,1fr) 300px;min-height:calc(100vh - 82px)}
 .editor-nav{border-right:1px solid var(--line);padding:18px 12px}
